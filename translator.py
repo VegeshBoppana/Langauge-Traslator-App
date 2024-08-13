@@ -1,27 +1,38 @@
-from googletrans import Translator
+import os
+from openai import AzureOpenAI
+
+KEY = "92a0ee28127347cfbb3e2b5d828bed12"
+
+client = AzureOpenAI(
+    api_version="2023-08-01-preview",
+    azure_endpoint="https://ai-proxy.lab.epam.com",
+    api_key=KEY,
+)
 
 def translate_text(text, source_language, destination_language):
-    translator = Translator()
+    # Construct a prompt for translation
+    prompt = (
+        f"Translate the following text from {source_language} to {destination_language}: "
+        f"'{text}'"
+    )
 
-    # Define language mappings if needed, otherwise googletrans supports many language codes directly.
-    language_mapping = {
-        'en': 'en',  # English
-        'fr': 'fr',  # French
-        'es': 'es',  # Spanish
-        'hi': 'hi',  # Hindi
-        # Add other Indian languages with proper ISO codes if supported
-        # For instance:
-        # 'te': 'te',  # Telugu
-        # 'ta': 'ta',  # Tamil
-        # 'kn': 'kn',  # Kannada
-        # 'mr': 'mr',  # Marathi
-    }
+    try:
+        # Use the chat model to get the translation
+        response = client.chat.completions.create(
+            model='gpt-4',  # You can use other models like 'gpt-35-turbo-0613'
+            temperature=0,
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+        )
 
-    # Convert the language codes
-    src_lang = language_mapping.get(source_language, 'en')
-    dest_lang = language_mapping.get(destination_language, 'en')
+        translated_text = response.choices[0].message.content.strip()
+        return translated_text
 
-    # Perform translation
-    translated = translator.translate(text, src=src_lang, dest=dest_lang)
+    except Exception as e:
+        print(f"Error translating text: {e}")
+        return "Translation failed."
 
-    return translated.text
